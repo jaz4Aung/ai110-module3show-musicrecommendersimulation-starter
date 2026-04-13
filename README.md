@@ -29,7 +29,36 @@ Some prompts to answer:
 
 You can include a simple diagram or bullet list if helpful.
 
----
+In real apps, recommendations usually blend many signals—what you play, skip, save, and what similar users like—often with opaque models and huge catalogs. My simulation is deliberately small and transparent: I treat taste as stated preferences (genre, mood, energy, and whether I like acoustic tracks) and score each song with clear rules instead of learning from behavior at scale. My version will prioritize tracks that align with my favorite genre and mood, then refine the list using how close a song’s energy is to my target and whether its acousticness matches my likes_acoustic preference, so results stay explainable and easy to debug.
+
+Each song is represented with:
+
+Identity & display: id, title, artist
+Categorical vibe: genre, mood
+Numeric audio-style features (0–1 scale where applicable): energy, valence, danceability, acousticness
+Tempo: tempo_bpm
+
+The profile holds explicit preferences:
+
+favorite_genre — preferred genre label (e.g. "pop")
+favorite_mood — preferred mood label (e.g. "happy")
+target_energy — preferred energy level on the same 0–1 style scale as songs
+likes_acoustic — whether the user generally wants more acoustic-sounding tracks (True) or less (False)
+
+The program have two parallel APIs: Recommender (OOP) and score_song / recommend_songs (functional). In both cases the idea is the same: build a scoring rule that adds weighted partial scores (and short “reason” strings for explanations), for example:
+
+Genre: bonus when song.genre matches user.favorite_genre (often a large weight so style stays on-target).
+Mood: bonus when song.mood matches user.favorite_mood.
+Energy: closeness score so songs near user.target_energy beat songs that are only “high” or “low” in general.
+Acousticness: small adjustment so high acousticness is rewarded when likes_acoustic is True, and penalized (or ignored) when it is False.
+
+How do the program choose which songs to recommend?
+Candidate set: all loaded songs (from the CSV via load_songs).
+Per-song score: run your scoring rule for each song vs the user (dict prefs in main / UserProfile in tests).
+Ranking rule: sort by total score descending and take the top k (e.g. k=5 in main, k=2 in tests).
+Output: return ranked songs plus score and a short human-readable explanation built from the reasons you accumulated (as in main.py: song, score, because …).
+That’s your ranking rule: “sort by score, then slice”—simple for this simulation; a fuller system might add diversity (avoid same artist back-to-back) on top of that ordering.
+
 
 ## Getting Started
 
