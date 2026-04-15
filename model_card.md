@@ -6,7 +6,7 @@
 
 ---
 
-## 2. Intended Use
+## 2. Goal / Task
 
 VibeFinder suggests 5 songs from a 20-song catalog that best match a user's stated taste
 profile. It is built for classroom exploration of how recommender systems work — not for
@@ -15,6 +15,16 @@ real users or production use.
 The system assumes the user can describe their taste with explicit labels (genre, mood)
 and numeric targets (energy level, tempo, etc.). It does not learn from listening history,
 skips, or saves.
+
+**Intended use:** Learning how scoring-based recommenders work. Experimenting with
+weights, profiles, and edge cases to understand bias and explainability.
+
+**Non-intended use:** This system should not be used to make real music recommendations
+for real listeners. It has a 20-song catalog, no personalisation, no content filtering,
+and no awareness of context (time of day, activity, mood changes). It should not be
+deployed in any product, embedded in a streaming app, or used to drive user engagement.
+Using it as a real recommender would produce repetitive, narrow results and could
+reinforce existing taste rather than helping users discover new music.
 
 ---
 
@@ -156,15 +166,29 @@ energy-driven and less style-driven — results feel more "vibe-based" and less
 
 ## 9. Personal Reflection
 
-Building this recommender made the abstract idea of "scoring" very concrete. Every
-recommendation is just arithmetic — add up the points, sort the list. What surprised me
-most was how much a single weight value (the genre bonus of 2.0) shapes the entire
-output. Halving that weight completely reshuffled the rankings, even though nothing else
-changed. Real systems like Spotify use hundreds of signals with learned weights, but the
-core idea — score each item, sort, return the top N — is exactly the same.
+**Biggest learning moment:** The weight-shift experiment. Halving the genre weight from
+2.0 to 1.0 completely reshuffled the #2 and #3 spots, and non-pop songs jumped nearly
+a full point. That made it obvious that a recommender's "personality" lives in its
+weights, not its data. The same 20 songs produce a style-loyal system or a vibe-driven
+system just by changing one number.
 
-The adversarial edge cases were the most educational part. A user who wants "high-energy
-sad" music is asking for something that barely exists in the catalog, and the system
-handles it by falling back to the genre match — which is sensible but not what the user
-wanted. That gap between "what the profile says" and "what the user means" is where real
-recommender systems spend most of their engineering effort.
+**Using AI tools:** AI helped most with the parts that are tedious but not hard —
+generating the extra 10 songs in valid CSV format, suggesting the Mermaid flowchart
+syntax, and drafting the plain-language explanations in this model card. The parts that
+needed double-checking were anything involving scoring math. The AI sometimes suggested
+reason strings that didn't match the actual formula, so I always verified the output
+against what `score_song` actually computed before accepting it.
+
+**What surprised me about simple algorithms:** The output genuinely feels like a
+recommendation even though it is just addition and sorting. When the lofi profile
+returns Midnight Coding at 5.96/6.00 with the reason "genre match, mood match, energy
+closeness: 0.98, acoustic texture: liked," it reads like something a knowledgeable
+friend would say. The transparency is what makes it feel trustworthy — you can see
+exactly why each song was chosen, which is something most real recommenders deliberately
+hide.
+
+**What I would try next:** The most meaningful improvement would be fuzzy genre
+matching — grouping "pop," "indie pop," and "k-pop" so they earn partial credit for
+each other instead of zero. Right now the system treats genre as a hard wall. Making it
+a soft boundary would let the catalog's diversity actually show up in the results,
+especially for users whose favourite genre has only one song.
