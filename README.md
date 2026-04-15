@@ -126,8 +126,37 @@ You can add more tests in `tests/test_recommender.py`,
 
 ## Sample Output
 
-Terminal output for the default 'pop/happy' profile against 20 songs.
-![Terminal output showing top 5 recommendations](assets/sample.png)
+### Profile 1 — High-Energy Pop (default)
+
+![Profile 1: High-Energy Pop results](assets/sample.png)
+
+### Profile 2 — Chill Lofi
+
+![Profile 2: Chill Lofi results](assets/sample_lofi.png)
+
+### Profile 3 — Deep Intense Rock
+
+![Profile 3: Deep Intense Rock results](assets/sample_rock.png)
+
+### Edge Case 1 — High Energy + Sad Mood
+
+Conflicting signals: `energy: 0.9` pulls toward metal/electronic, but `mood: sad` only
+exists in blues (low energy). The genre+mood match still wins — `3am Confession` tops
+the list despite a poor energy fit (score 0.54), showing how exact-match bonuses can
+override numeric closeness.
+
+![Edge Case 1: High Energy + Sad results](assets/sample_edge1.png)
+
+### Edge Case 2 — Acoustic Lover Wants Metal
+
+Contradictory: `likes_acoustic: True` but `genre: metal`. No metal song has
+`acousticness ≥ 0.6`, so the acoustic bonus never fires — Iron Cathedral wins on
+genre+mood+energy alone. Scores #3–5 drift to acoustic songs (blues, folk, country)
+that have nothing to do with metal, revealing the acousticness bias.
+
+![Edge Case 2: Acoustic + Metal results](assets/sample_edge2.png)
+
+---
 
 ## Experiments You Tried
 
