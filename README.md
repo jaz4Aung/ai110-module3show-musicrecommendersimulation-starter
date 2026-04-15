@@ -17,46 +17,77 @@ Replace this paragraph with your own summary of what your version does.
 
 ## How The System Works
 
-Explain your design in plain language.
-Some prompts to answer:
+This recommender is deliberately small and transparent. There are no learned weights — every scoring decision is a hand-written rule, so results are fully explainable.
 
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
+### Data Flow
 
-You can include a simple diagram or bullet list if helpful.
+```mermaid
+flowchart TD
+    A[“data/songs.csv\n(20 songs)”] -->|”load_songs(csv_path)”| B[“List of Song Dicts”]
+    B --> C[“recommend_songs(user_prefs, songs, k=5)”]
+    C --> D{“For each song\nin catalog”}
+    D --> E[“score_song(user_prefs, song)\nreturns (score, reasons)”]
+    E --> F[“Apply Algorithm Recipe\n(see table below)”]
+    F --> D
+    D -->|”All 20 songs scored”| G[“Sort descending by total score”]
+    G --> H[“Slice top k = 5”]
+    H --> I[“Output: (song_dict, score, explanation_string)”]
+```
 
-In real apps, recommendations usually blend many signals—what you play, skip, save, and what similar users like—often with opaque models and huge catalogs. My simulation is deliberately small and transparent: I treat taste as stated preferences (genre, mood, energy, and whether I like acoustic tracks) and score each song with clear rules instead of learning from behavior at scale. My version will prioritize tracks that align with my favorite genre and mood, then refine the list using how close a song’s energy is to my target and whether its acousticness matches my likes_acoustic preference, so results stay explainable and easy to debug.
+### Song Features
 
-Each song is represented with:
+| Field | Type | Description |
+|---|---|---|
+| `id`, `title`, `artist` | identity | display only, not scored |
+| `genre` | string | categorical style label |
+| `mood` | string | emotional tone label |
+| `energy` | 0.0–1.0 | intensity (calm → maximum) |
+| `valence` | 0.0–1.0 | positivity (dark → bright) |
+| `danceability` | 0.0–1.0 | rhythmic/groovy feel |
+| `acousticness` | 0.0–1.0 | acoustic vs. electronic texture |
+| `tempo_bpm` | float | beats per minute |
 
-Identity & display: id, title, artist
-Categorical vibe: genre, mood
-Numeric audio-style features (0–1 scale where applicable): energy, valence, danceability, acousticness
-Tempo: tempo_bpm
+### User Profile Keys
 
-The profile holds explicit preferences:
+| Key | Type | Description |
+|---|---|---|
+| `genre` | string | preferred genre (exact-match target) |
+| `mood` | string | preferred mood (exact-match target) |
+| `target_energy` | 0.0–1.0 | preferred energy level |
+| `likes_acoustic` | bool | rewards acoustic texture when True |
+| `target_valence` | 0.0–1.0 | preferred emotional brightness |
+| `target_danceability` | 0.0–1.0 | preferred groove level |
+| `target_tempo_bpm` | float | preferred beats per minute |
 
-favorite_genre — preferred genre label (e.g. "pop")
-favorite_mood — preferred mood label (e.g. "happy")
-target_energy — preferred energy level on the same 0–1 style scale as songs
-likes_acoustic — whether the user generally wants more acoustic-sounding tracks (True) or less (False)
+### Algorithm Recipe
 
-The program have two parallel APIs: Recommender (OOP) and score_song / recommend_songs (functional). In both cases the idea is the same: build a scoring rule that adds weighted partial scores (and short “reason” strings for explanations), for example:
+| Signal | Max Points | Formula |
+|---|---|---|
+| Genre match | **+2.0** | `+2.0` if `song.genre == user.genre`, else `0` |
+| Mood match | **+1.0** | `+1.0` if `song.mood == user.mood`, else `0` |
+| Energy closeness | **+1.0** | `1.0 - abs(song.energy - user.target_energy)` |
+| Valence closeness | **+0.5** | `0.5 * (1 - abs(song.valence - user.target_valence))` |
+| Danceability closeness | **+0.5** | `0.5 * (1 - abs(song.danceability - user.target_danceability))` |
+| Acousticness fit | **±0.5** | `+0.5` if `likes_acoustic` and `acousticness ≥ 0.6`, `-0.5` if `not likes_acoustic` and `acousticness ≥ 0.6` |
+| Tempo closeness | **+0.5** | `0.5 * max(0, 1 - abs(song.tempo_bpm - user.target_tempo_bpm) / 80)` |
 
-Genre: bonus when song.genre matches user.favorite_genre (often a large weight so style stays on-target).
-Mood: bonus when song.mood matches user.favorite_mood.
-Energy: closeness score so songs near user.target_energy beat songs that are only “high” or “low” in general.
-Acousticness: small adjustment so high acousticness is rewarded when likes_acoustic is True, and penalized (or ignored) when it is False.
+**Maximum possible score: 6.0**
 
-How do the program choose which songs to recommend?
-Candidate set: all loaded songs (from the CSV via load_songs).
-Per-song score: run your scoring rule for each song vs the user (dict prefs in main / UserProfile in tests).
-Ranking rule: sort by total score descending and take the top k (e.g. k=5 in main, k=2 in tests).
-Output: return ranked songs plus score and a short human-readable explanation built from the reasons you accumulated (as in main.py: song, score, because …).
-That’s your ranking rule: “sort by score, then slice”—simple for this simulation; a fuller system might add diversity (avoid same artist back-to-back) on top of that ordering.
+Genre carries the most weight (2.0 / 6.0 = 33 %) to keep results on-style. Mood comes next (17 %). Numeric features together account for the remaining 50 %, so a song in the wrong genre can still rank well if it matches everything else closely.
+
+### Ranking Rule
+
+1. Score every song in the catalog using the recipe above.
+2. Sort by total score descending.
+3. Return the top `k` results (default `k = 5`), each with its score and a comma-joined explanation string built from the matching reasons.
+
+### Expected Biases
+
+- **Genre dominance:** A perfect genre match (+2.0) can outrank a better overall numeric fit that’s in the wrong genre. A blues fan asking for “pop” will never see their best matches bubble up.
+- **Exact-match brittleness:** `”indie pop”` and `”pop”` are different strings, so an indie pop song scores 0 on genre even though it’s close. Real systems use embeddings to avoid this.
+- **Acousticness cliff:** The ±0.5 rule kicks in only at `acousticness ≥ 0.6`. Songs at 0.59 are treated the same as fully electronic ones.
+- **Cold-start:** The profile is hand-coded. There is no implicit feedback (plays, skips, saves), so the system cannot learn or adapt.
+
 
 
 ## Getting Started
@@ -92,6 +123,11 @@ pytest
 
 You can add more tests in `tests/test_recommender.py`,
 ---
+
+##Sample Output
+
+Terminal output for the default 'pop/happy' profile against 20 songs.
+![Terminal output showing top 5 recommendations](assets/sample.png)
 
 ## Experiments You Tried
 
