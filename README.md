@@ -18,7 +18,6 @@ Replace this paragraph with your own summary of what your version does.
 ## How The System Works
 
 Explain your design in plain language.
-
 Some prompts to answer:
 
 - What features does each `Song` use in your system
@@ -91,8 +90,7 @@ Run the starter tests with:
 pytest
 ```
 
-You can add more tests in `tests/test_recommender.py`.
-
+You can add more tests in `tests/test_recommender.py`,
 ---
 
 ## Experiments You Tried
