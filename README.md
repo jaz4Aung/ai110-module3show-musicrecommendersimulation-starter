@@ -160,11 +160,44 @@ that have nothing to do with metal, revealing the acousticness bias.
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
+### Experiment 1 — Weight Shift: genre 2.0→1.0, energy 1.0→2.0
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+**Change:** Halved the genre match bonus and doubled the energy closeness multiplier.
+
+**Pop/Happy profile — before vs. after:**
+
+| Rank | Before (genre=2.0) | Score | After (genre=1.0, energy×2) | Score |
+|---|---|---|---|---|
+| #1 | Sunrise City (pop/happy) | 5.44 | Sunrise City (pop/happy) | 5.42 |
+| #2 | Gym Hero (pop/intense) | 4.24 | Rooftop Lights (indie pop/happy) | 4.38 |
+| #3 | Rooftop Lights (indie pop/happy) | 3.42 | Gym Hero (pop/intense) | 4.11 |
+| #4 | Neon Runway (k-pop) | 2.27 | Neon Runway (k-pop) | 3.19 |
+| #5 | Crown Season (hip-hop) | 2.21 | Crown Season (hip-hop) | 3.16 |
+
+**Finding:** Sunrise City stayed #1 because it matches on every signal. The more
+interesting shift was #2 and #3 swapping: Rooftop Lights (indie pop, energy=0.76)
+overtook Gym Hero (pop, energy=0.93) because its energy is closer to the 0.8 target.
+With a smaller genre bonus, being in the "right" genre matters less and feeling the
+right energy level matters more. The bottom two songs (Neon Runway, Crown Season)
+jumped from ~2.2 to ~3.2, showing how much the halved genre bonus opened the door for
+non-pop songs.
+
+**Conclusion:** The original weights (genre=2.0) keep results style-loyal. The
+experimental weights (energy×2) make results more vibe-driven. Neither is objectively
+correct — it depends on whether the user cares more about genre consistency or
+energy feel.
+
+---
+
+### Experiment 2 — Diverse Profiles
+
+Tested five profiles covering: High-Energy Pop, Chill Lofi, Deep Intense Rock,
+High-Energy + Sad (adversarial), Acoustic Lover + Metal (adversarial).
+
+Key observation: The lofi profile scored the highest (5.96/6.00) because the catalog
+has three lofi songs with tightly matching numeric features. The rock profile dropped
+sharply from #1 to #2 (5.47 → 3.09) because there is only one rock song. This
+reveals a catalog-size bias — genres with more songs are served much better.
 
 ---
 
