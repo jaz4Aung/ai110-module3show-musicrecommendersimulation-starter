@@ -42,6 +42,7 @@ class Recommender:
         self.songs = songs
 
     def _score(self, user: UserProfile, song: Song) -> float:
+        """Returns a numeric score for one song against a UserProfile using genre, mood, energy, and acousticness signals."""
         s = 0.0
         if song.genre == user.favorite_genre:
             s += 2.0
@@ -53,9 +54,11 @@ class Recommender:
         return s
 
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
+        """Returns the top-k Song objects ranked by descending score for the given UserProfile."""
         return sorted(self.songs, key=lambda song: self._score(user, song), reverse=True)[:k]
 
     def explain_recommendation(self, user: UserProfile, song: Song) -> str:
+        """Returns a comma-joined string of human-readable reasons why a song was recommended."""
         reasons = []
         if song.genre == user.favorite_genre:
             reasons.append(f"genre match: {song.genre} (+2.0)")

@@ -124,7 +124,7 @@ pytest
 You can add more tests in `tests/test_recommender.py`,
 ---
 
-##Sample Output
+## Sample Output
 
 Terminal output for the default 'pop/happy' profile against 20 songs.
 ![Terminal output showing top 5 recommendations](assets/sample.png)
